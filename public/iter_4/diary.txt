@@ -1,0 +1,199 @@
+29/11/25
+it is time.
+this iteration is all about backpropogation. no extra features please and thank you
+should credit the 3b1b video and website for most of the things i will know
+
+ill be using stochastic gradient descent, so that the user may see some values of forward propogation being calculated before backpropogation hsa to be calculated.
+the batch size will be some arbitrary number, most likely a part of global state.
+
+other features added to global state include: learning rate
+
+the thing needs to be able to 
+
+i think im going to make the network have a one-node input be a nunber of radians (divided by 2pi to be put between 0 and 1) and the output will be a one node output which is the result from the sine function. yES
+
+oh eventually i need to make the whole thing happen forever somehow. I also need to be able to empty the values of the network. mabe ill implement that first?
+either each layer is emptied one at a time or the whole thing isemptied at once. i like the latter. im going to
+wait how the fuck would i implement that
+nvm! im going to do them one at a time, starting from the back to the front
+before emptying the network, the network stalls for 1000ms
+going to make a stall function later
+discovered i dont need a stall function and can just use sleep
+
+backpropogation
+network needs to be able to calculate its error
+
+ok first how does backpropogation work?
+so you use the formula (differential equations) to find the how much you nudge the weight (and the bias) by
+and then you take an average of all of these nudges and multiply the nudges by the learning rate
+and then you add the nudges to the weights! yippee!
+
+direct quote from the 3b1b website:
+"So if we want the derivative of C with respect to the weight (rather than the derivative of C0 with respect to the weight), we need to take the average of all the individual derivatives"
+so. the average you take. is of Everything.
+
+cool cool cool.
+
+ok what do you have to do?
+
+you calculate each nudge separately and then you average those all. and then you turn it into a matrix and add it to the weight matrix and thats the new matrix.
+
+the thing needs to be able to calculate error
+
+you also need the derivatives of each of these
+
+derivative w.r.t weight vs w.r.t bias
+weighted sum equals WX + b
+w.r.t weight = x
+w.r.t bias = 1
+w.r.t. activation = w (this is important later)
+
+the data is stored as tuples, where each tuple contains 2 elements: the expected output, and the actual input
+
+when a training thing is about to happen, 3 pieces of data are chosen randomly and put into a thing, most likely a list of some kind. each of these will also have the final output
+
+what is needed to adjust one weight after one thingy of forward propogation?
+- the error of the network at that specific point
+- the weight itsel
+- the weighted sum of???
+
+ok im trying to understand it. its confusing. maybe this function should be recursive?
+
+yeah. a function that takes the derivative of the cost w.r.t the activation above as input. and if theres no input, it calculates it using the derivative of the squared error thingy. but would it take a numerical value or a vector? my gut is saying vector, to reduce recalculation and reduce the need for memoisation (as i have no idea hwo to do that.)
+
+lets look at my own word notes:
+
+"
+So, basically, the golden value is the derivative of the cost w.r.t the node in front (of whichever thing you’re looking at), and that multiplied by the derivative of the activation function (with an input of the weighted sum of the node in front (of whichever thing you’re looking at)). And then: 
+
+If youre deriving for a weight, multiply by the activation (the one used when calculating the weighted sum of the node in front. basically using the activation here instead of the one in front) 
+
+If you’re deriving for an activation (for chaining), multiply by the weight (the one used for calculating the weighted sum of the node in front, i.e. whatever you had to multiply by THIS activation to calculate that front weighted sum) 
+
+If you’re deriving for a bias, don’t multiply by anything (i.e. multiply by 1) 
+"
+
+lets start from the front.
+when calculating the derivative for those weights, you do:
+
+there's an issue though. when deriving for an activation that isn't an activation on the output layer, you have to multiply by a weight in front of it (not the weight that connects to whatever you're trying to do), and look at a thing for the node *in front*. but which node do you look at? if there were 3 nodes in the layer in front, you have 3 options to choose from...
+
+to solve this. quoting the 3b1b website directly:
+"
+So to understand the sensitivity of the cost function to this neuron, you have to add up the influences along each of those different paths.
+"
+So. starting from the front. To calculate the derivative of the cost function w.r.t nodes in layers behind. you TRANSPOSE. THE WEIGHT MATRIX. and matrix multiply by the golden values of the layer in front. and that vector IS YOUR C/a VALUES FOR EACH NODE. genius. midnight genius I am.
+
+ok ok ok here we go
+i could make a function to calculate the C/a values. what should they be called? costActivationGradients. YES
+and they take a vector of golden values from the layer in front. goldenValuesFront. and also the weight matrix. the weight matrix will be transposed in this function. or i guess rotated?
+
+this is gonna be a hell of a lot to write up. its fine
+
+currently checking on paper if its ok to transpose vs rotate, and it seem like it doesnt make a difference?
+ok there is one important difference though, and that is the order of the goldenValues vector that you multiply by.
+If transposed, the goldenValues vector is equal to the order of the nodes in that layer, from top to bottom.
+If rotated, you have to reverse theorder, and it goes from bottom to top instead.
+so its definitely better to transpose in that case.
+but either way, the answer comes out the same way around, which is helpful.
+
+i am going to write up this function
+maybe i call it the goldevalues calculator, because i can immediately calculate goldevalues from the C/a values, just by multiplying by the activation function derivatives that have had their weighted sums as inputs. although that might be finnicky to calculate, so lets just go with C/a for now.
+
+ok thats done! now how to get thingy?
+man, maybe the calculation and the animation really should've been two separate functions?
+ok what do we want? so we already have C/a. Now we need a/z, which will be the derivative of the activation function with THIS z as input.
+
+how will we know which activation function is being used? maybe thats a part of global state. yeah definitely. I'm going to rewire state to do that so that it can be used for forward prop AND back prop
+
+i made sigmoid function instead of const so that i dont have to do that in order
+
+i could also make d_activation function a part of state? yeah its probably better than using switch cases
+ok there has to be some way to keep track of the Z vector used in forwardPropogation, because the Z vector in each layer will be multiplied value-wise to the C/a vector in each layer to get golden values. but then they'll never be used again? but since forward propogation goes forwards (no duh) goldenValues vectors must be calculated after one entire forwardPropogation run. yeah the animation definitely needs to be separated out from the maths. in fact even after goldenValues are calculated, the Z vector will still be needed in wait will it? or is that activations? nope thats activations. i think.
+
+ok i will separate out the functions. Idk where the Z-values can be stored though. maybe calculating activations or calculating weighted sums is a separate thing?
+
+ill implement that because that's easy to implement. ill do that later, actually. ok first ill plan getting the goldevValues
+
+ok revisit
+derivative of a weight: multiply goldenValue by activation of node behind
+derivative of a c/A: multiply by weight  behind (but youve already dealt with that by transposing the matrix)
+derivative of a bias: don't multiply by anything.
+
+ok so to get the derivatives w.r.t. weights in the long run, you want the zs of the layer before and the GVs of the layers after, and somehow you re-un-multiply these matrices to get a matrix in the same size.
+what are we finding? were finding costWeightMatrix
+this matrix has the width of the layer before (has the width of the ZVector) and has the height of the layer after (has the height of the goldenVector)
+
+but to change the bias, which goldenValue do you use?
+id assume its just a sum of all the goldenValues of the above layer? and then you dont multiply it by anything?
+the bias was used in the weighted sum of every node in the above layer. maybe you calculate the dervative for each above node separately, and then you add those all up? do you average them or just sum them?
+
+ill also need a function that can calculate the first golden values of the output layer
+
+TODO
+ok ive planned a lot of functions. still need to figure out exactly how to find the derivative of the cost w.r.t bias in any one layer.
+also have to separate the forwardPropogation out into maths and animation, and create & implement the findWeightedSums function.
+
+created the weighted findWeightedSums function, didnt test it, it worked basically perfectly. i think
+i tested it and all is well.
+
+need a function that can take the average of a bunch of matrices / vectors
+
+tf.mul() multiplies matrices element-wise, whcih is exactly what i need (source: https://www.geeksforgeeks.org/javascript/tensorflow-tf-mul-function/)
+
+for the averaging i might just use the mapping function to multiply each element by whatever
+
+30/11/25
+I figured out that finding the matrix of derivatives for the weights is also just simple matrix multiplication. its the goldenValues of the layer in front, multiplied by a transposed verson of the activationValues of the layer behind.
+
+so i wonder if you do the same for the biases and get a 1x1 matrix out of it?
+it would be a 1xa times an ax1 matrix
+maybe its literally just multiply them all by a matrix full of ones? that might even be more efficient than summing the matrix, as you wouldnt have to iterate through it?
+i am going to simply assume they have to be added up. which makes sense
+
+to deal with batches and storign values, maybe there's a big overall function called run, which takes batch size as input and then bombs away
+
+i think first i will make the 3 derivative functions with the correct inputs and then I'll worry ab
+or ill make the golden values function first?
+the findFirstGoldenValues function will take the output, expected output, the d_activation function, and the zValues of this layer
+
+because i think the main issue is that these functions do very little, maybe 1 or 2 lines.
+
+maybe before i do any of this, i practice doing the matrix things i need to?
+
+credit for multiplying matrices element-wise
+https://www.tensorflow.org/guide/tensor
+this talks about doing it in python but the autocorrect showed me a js equivalent that worked so
+
+multiply by scalar:https://www.tensorflow.org/api_docs/python/tf/math/scalar_mul
+again this is python but eh
+
+30/11/25
+made the matricesAvg function, untested. going to make the goldenValues function I think
+
+i need a way to calculate the actual output from the expected output.
+
+making so many untested functions you wouldnt even believe rn
+
+summing elements in a vector:
+https://www.geeksforgeeks.org/javascript/tensorflow-js-tf-sum-function/
+
+ok i made all the functions needed thus far in terms of maths. now how woudl i ever implement them. i have a coupld hours if i want to do this.
+
+ok i want maybe an array of 
+
+ok you do forwardPropogation first once, and then you iterate back through the network. you calculate the goldenValueVector of the output layer, and you find the derivative matrix for weights, and find the bias gradient for the bias of the layer behind. Then you go back and keep going until you get to the second layer (not the input layer)
+
+maybe you keep two different 2D matrices of matrices / biases, and you average them heightways
+
+maybe iterating back through a completed network would be a separate function called backPropogation
+must remember: backPropogation is not equal to adjusting the weights and biases, backPropogation is calculating the weights' and biases' gradients, based on the current state of the network.
+
+unshift: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/unshift
+
+created the backPropogation function. cool reminder that this is all one big blob of untested code
+
+now to work on running the thing
+ok i have to keep in mind that the d_weight matrices will be tf matrices, and the d_biases will be numbers.
+
+my network isnt yet capable of calculating it's own error. this may be an issue?

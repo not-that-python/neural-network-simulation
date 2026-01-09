@@ -1,0 +1,392 @@
+20/10/2025
+Began iteration 2
+TO DO: talk about the creation functions you've made AFTER deciding on success criteria
+
+31/10/25
+Copy/pasted success criteria over from iteration 1. Modified them to be this:
+- SC1: two circles representing nodes, each in one layer, connected by a line representing their connection, all with colours based on their respective values
+- SC2: more than 2 visible layers, and at least 1 node per layer, connected by lines, all with colours based on their respective values
+- SC3: all the values (e.g. all the weights or all the activation values) in one layer may smoothly change at a time (animation), and only one layer may be animated at a time.
+- SC4: the network can be animated forever without user input
+
+Considering: should I plan ahead for the animation to be pausable yet?
+Updated the writeup with research into LMC based on the 3 state properties: paused, speed, and warpedTime. now understand warpedTime:
+    duration and animation.startDate also change based on warpedTime. warpedTime is essentially a replacement for Datetime.now(), specific to animations, and can be controlled by `state.paused` to stop increasin gwhen no animations should be running. Plan to implement this into my own code.
+
+Could now prepare ahead for pausing and changing speed without implementing either of these properties.
+
+01/11/25
+started on SC1
+havent defined sub-success criteria yet, but i will finish planning, creating, and testing the functions that I already have: creation functions, position calculation function(s), drawing functions
+
+note: the weight matrix has a width equal to numNodesPrev and a height equal to numNodes(Cur). essentially, when representing it using a 2D matrix, the number of lists is equal to the number of nodes in the current layer, and the number of elements per list is equal to the number of nodes in the previous layer
+
+have created and tested the creatino and position calculation functions. however mid-drawNetwork, I realised there may be an issue with when there's only 1 layer or item. since numItems = 1, location would have dividing by 0 involved. gonna sort that out real quick
+
+started on script.js with the canvas and whatnot. in the process of updating my writeup with all the testing evidence
+
+fixed some issues with drawNetwork after drawing it to canvas (e.g. missing "let"s, layer[index] instead of layer.nodes[index]). did not record my process of doing this. should i have done this?
+have mentioned this, but didn't evidence it.
+
+03/11/25
+starting SC2: might be easy to fulfill?
+yep nope. so. all the nodes are at the bottom of the damn screen
+did console.log(network) after assigning positions in drawNetwork and discovered all nodes had the same x position and are being drawn on top of eath other in a layer.
+Also I should increase y padding as seen.
+
+Discovered that the positions were being calculated correctly, but there was a referencing issue with the objects for unknown reasons.
+changed it from network[i].nodes[j].x = x ... to network[i].nodes[j] = {value: network[i].nodes[j].value, x: x, y: y}. unsure of why this helped but it did.
+
+however, discovered a new issue: the weights for each layer may all bethe same one number.
+solved that issue, thank you stack overflow. now have to solve the matrix indexing issue that comes with changing the dimensions.
+
+04/11/25
+gonna fix the weight matrix indexing issue by changing dimensions to various different values
+tried out:
+2, 2, 2 (was already working)
+3, 3, 3
+3, 3, 3, 3
+4, 3, 3 (err.)
+3, 3, 4
+2, 3, 4
+2, 4, 3 (err.)
+1, 5 (different issue unearthed): every weight is once again being assigned the same
+2, 5 (similar issue unearthed)
+discovered: source of all these issues is that in weights[b][a], a and b were the wrong way around. but this is concerning: according to the anatomy of the weight matrix, it should be that way around. either i have miscalculated the size of my weight matrix or i am creating my weight matrix the wrong way around.
+discovered issue: i am in fact the problem. when determining the lengths of the list and of each sub-list, I got the lengths of the layers the wrong way around, and therefore got the index to use the wrong way around.
+
+im using too much prose wth :crying_face:
+
+fulfilled SC2! although maybe I fulfilled it too soon? I might change the way the y-ordinate is calculated, but idk if I should do that now.
+
+TODO from meeting with mr gordon:
+- for algorithm planning in iteration 1, add some text explaining what the images all are, rather than just the images themselves (done. may even remove all the screenshots and replace them with a big snippet of text)
+- one of the iteration images has cut-off words and line numbers
+- take a look at the markscheme for evaluation after each iteration
+
+started SC3
+broke up SC3: may not have broken it up small enough, we'll see idk
+
+basically immediately fulfilled SC3.1 so thats helpful. idk if I wanna provide proof of it and i also dont know how to provide proof of it. so. um.
+
+07/11/25
+starting SC3.2.
+Chekced the differenced between this function and the function from iteration 1. im not taking the entire animation object or the entire node as input anymore. im also not taking updateWeight as input anymore. this way this function is muh more self-contained, and is dedicated purely to changing the property of a value withiut "knowing" or "caring" what that value is. i believe that would make it easier to use in other functions and in loops.
+
+currently stuck on how to implement actual animation, so im just gonna make and test the animateAttribute function i made.
+
+reason for re-assigning each array with an empty array:
+.fill(someArray) will fill the outer array at each index of itself with _references to the same array_. not copies of the same array. i could mention this in my writeup, and possibly use this to understand why a similar thing was happening to. idr. something.
+
+I have just discovered that the same thing is going to happen to the nodes. i think. maybe?
+I just fixed this using map.
+
+ok idk how im gonna be able to do aniamtions. according to the github guide i could assign animation objects / lists to each layer. I wonder if each layer should have it's own animation list? or since the list of nodes already exists, maybe each node could be assigned its own animation? but then weights could not be animated in the same way, and thats not helpful.
+
+each animation will run bit by bit until they're all done. when that happens, a promise will be resolved.
+if all the animations for one layer are stored ina list, then when the animation is finished, it will be either popped from the list (which could cause indexing issues) or replaced with somethign like `null`, which may be the rbetter option. keep in mind that animations within a layer will be concurrent and not parallel, so they will not all finish in the same instant.
+
+08/11/25
+
+from the guide:
+in the update state part
+if ball.animate (if the ball has an animation object attatched that doesnt equal null or undefinded) then update that object's thingy
+if duration is up:
+ball.animate = null
+resolve()
+
+copied the code from the guide. when you do this:
+moveBall1()
+moveBall2()
+they animate at the same time. awaiting is used so that one animation will happen one after the other. however if you do this:
+async function animateBalls() {
+    await moveBall1()
+    await moveBall2()
+
+}
+animateBalls()
+then first ball 1 will be animated, and then ball 2 will be animated. i think when i did this, awaits were being used inside awaits, which might be useful for me too so that one node wouldnt be animated by 2 animations at once.
+
+its definitely worth doing a spike test for this.
+
+idea for spike test: a 2d array with 2 arrays, each one containing two balls with values, drawn in in the same way as the nodes maybe.
+the balls in the first list will be animated at the same time, and the balls in the second list will be animated when that first one's animation is finished.
+
+made animate.html to play around with the moveBalls functions. should definitely mention that ive done that and credit the original course for it.
+
+listing which animations should be what
+within layer:
+node(1) & node(2): concurrent
+ndoe(1) & node(1): separate
+node(a) & weight(b): separate
+weight(1) & weight(2): concurrent
+weight(1) & weight(1): separate
+
+between layers: all separate
+layer(1) & layer(2): separate
+layer(1) & layer(1): separate
+
+as previously mentioned, animations should not be attatched to nodes. each layer should instead have an animations list
+
+this means that within a layer, the process of creating / assigning an animation should be awaited, but the process fo animating each layer should not. 
+
+i think because im struggling with how to do this spike rtest, first ill literally jsut use the code fro mthe guide
+
+discovered that with the way animateAttribute works, i cant use the valeus being the same to stall for time in pauses if i ever want to (since the promise will resolve based on the valeus being the same). animateAttribute may have to also return a boolean value to indicate whether or not the animation is finished
+
+note: the code fro mthis spike test is very unorganised and messy. i jsut needed somethign at all to exist so
+
+have now got animations for each ball to happen one after another. but separate balls can still be animated at the same time. also the animations are attatched to the balsl and i dont want that.
+things to do:
+- put animations in the animations list instead
+- make it so that animations between layers are awaited too
+
+reminder of how promises work:
+idk. takes function as input. can revolse using the resolve thingy
+
+ok ive managed to change it so that the animation objects are in the animation list in the correct position. now going to work on making it so that only one layer can be animated at a time.
+
+now working on makign it so that only one layer can be animated at a time.
+
+discovered something interesting. so i am using different combinations of awaiting newAnimateBall and awaiting animateLayer. (might be a good chance to create a table)
+
+if you await newAnimateBall and await animateLayer, every node goes only one after another. if you await newAnimateBall but dont await animateLayer, then as expected, every ball in different layers but at the same index will animate. if you dont await either, all 4 balls will animate at the same time. but interestingly, if you dont await newAnimateBall but do await animateLayer, all 4 balls still animate at the same time. this indicates that you can only await a function if it itself awaits functions, or if it returns a promise.
+
+this also indicates that another promise is required. animateLayer should return a promise which is resolved only when all newAnimateBall functions are completed at once.
+
+this happens when theres nothing left in that respective layer's animation list. however that also happens instantaneously once one animation is finished. im gonna try promisifying the newAnimateBall function and see what happens, if anything changes at all.
+methodically nothing changes. im gonna try promisifying the animate layer function based on the presence of items in the layer's animation list.
+
+something interesting happened. i promisified the loop where each ball in a layer is animated in animateLayer. if, within the promise, you simply resolve the promise, then as per usual everythign happens at the same time. however if you return resolve instead, even if you dont do anything with that returned resolve function, only layer 0 will animate, and the loop never reaches layer 1.
+i put a console.log() after await animateLayer and it turns out it just never gets resolved.
+
+(credit to https://stackoverflow.com/questions/53897673/check-if-all-values-in-array-are-true-then-return-a-true-boolean-statement-jav for .every() btw)
+
+10/11/25
+
+might have to credit ben somehow (could just say got help from an undisclosed colleague / schoolmate / fellow student / how do you do, fellow kids?) for reassigning node when assigning positions
+
+trying some simple code just messing around wit hpromises and returning resolves
+
+i now want a promise to be resolved whenever a loop is finished running (i think?)
+
+ok. so the function you input into a Promise cannot return the resovle function. but you can put it somewhere else, like give it to an object you assign to something. i could input something into animateLayer and then feed the resolve function into that.
+ok i modified my code to do that, but first im gonna try that out in promise.js and see what happens
+
+ok. so it doesnt work for passing an object as an argument to then assign the resolve function to. what if instead the resolve function was assigned to a global variable, like in the guide code?
+
+that also doesnt work. ok lets try making it an atttribute of an object. more like in the guide code. ok that also didnt work. wow i am enjoyimg myself. my ear lobes are actually jsut crystallised
+ok i looked at the guide code and the resolve function is seemignly never defined? yet can jsut be used? lemme try that
+yeah that didnt work. but i have anotehr idea maybe?
+
+promisifying may have been the best way to do things, but becuase im struggling with it so much, i think that whenevr a ewAnimateBall thing is finished happening, the animate object thing at that point could jsut be replaced with a string that says e.g. "finished". why am i using a string? instead of undefined or false? possibly to avoid confusion in the updating loop where is checks for the truthiness of  whatever is stored at that index in the animations list.
+
+this is taking a long damn time. there has to be an easier way to go about this.
+ok i have to properly identify my issue
+oh turns out i misread the guide code and the resolve function is in fact defined
+i did not forsee animation being so difficult
+
+11/11/25
+round 2 bitches
+so. the code that was unreachable in newAnimateBall? the whole. damn thing. was OUTSIDE THE PROMISE. INCLUDING THE RESOLVE
+
+OK PROGRESS. not really though.
+instead of promises that never resolve, all 4 animate at the same time again.
+
+ok i think the if statement isnt happening because it only checks once and rather than re-running the promise its just pending forever. so im going to turn that into a while sttaement?
+nope. that blows up the website.
+
+ok. what are we waiting for? in animateLayer?
+we cannot wait for each newAnimateBall function to resolve, since we haven't even awaited them. we just have to wait for them to finish.
+you can replace every item in the animation list with 'finished'.
+you need a promise that is fulfilled when every item in the animations list is fulfilled.
+
+credit someone for the sleep function? yes this thing: https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
+how do i credit my teacher for the idea of sleepign for a tiny amount to stop it from crashing
+
+OK OK SOMETHING NEW HAPPENED
+First, the first layer animated. THEN THEY BOTH ANIMATED AT THE SAME TIME
+
+ok. idk if whatever im about to do will change anything, but to keep things safe, after everythign in the list is set to 'finished', ill make it empty again.
+
+hm. um. ok. something else new happend. not bad, but very strange. so in layer 1, the top node animated bu the bottom one didnt.
+
+um? what the fuck?? it works??? holy shit??? lets celebrate???
+ok i dont know why though. LIKE IT WASNT WORKING 2 SECONDS AGO
+
+ok hi! im gonna un-promisify the code in newAnimateBall and see if anything changes. hopefully nothing changes.
+ok before i do that, in the console of the dev website, i tried runnign animateLayer and it didnt do what i expected (it did a weird thing with the node at (0,0)), so some kind of cleanup is in order.
+anyways, i removed the promise, and a weifrd thing did happen with node (0,0) again. it animated twice.
+i might remove all the console.logs and add new ones to figure out whats happening.
+fuck me dude. i removed all the console.logs and now the code works? what???
+no. no i wont stand for this. im committing this
+
+ok im gonna go through the code and figure out what the hell is wrong. or right. idk
+so i looked through the diffs on git hub and here are the main differences, which i already expected:
+- removed console.logs
+- added the while true loop that fixed everything
+- unpromisified newAnimateBall
+
+ok im running out of time. what are the main points?
+talk about the 4 combinations of awaiting and not awaiting and the difference that was made
+talk about what exactly you wanted animateLayer to be "waiting" for to happen
+talk about promise.js to check if it was possible to get the resolve function outside of the promise in the saem way the guide had done. this was not possible so it was decided against.
+talk about using replacing each item in the list with 'finished' so that animateLayer would finally have a condition to wait for
+and then realise that using an  if statement to wait forthat would not work because once that if stamement was run once, it would never be run again. so it had to be changed to a while loop
+while the while loop wouldn't run forever, it woudl block everything else from running. absolutely everything. including scrolling up and down, for example. so she sleep function (credit to that stack overflow thread) was needed to "yield" the while loop temporarily and allow other small background things to continue running.
+
+13/11/25
+After meeting with Neill:
+think about the number of weeks left and how many hours you haev per week. Then think about the features that will and wont be included in your program based on the number of hours you have left
+storyboarding helps not only to get the marks, but also to think about exactly what the user will see
+this kind of animation is about using as much animation as possible to demonstrate whats happening, so try to use animatino to demonstrate what's being calculated when you can.
+look into GSAP?
+excalidraw animation storyboards
+if you cant seem to find a point where youd use a flowchart, the storyboard will be useful
+
+14/11/25
+from lesson:
+you need some input validation of some kind, as per the markscheme. it is an entire marking section
+luckily you alreadfy have this, you jsut need to make sure it's evidenced. also when you evidence it, talk about it along a "validation" line of thinking (and also, like, use the word "validation")
+
+you have about 14 hours left, roughly:
+4 lessons left, 100 x 4 / 60 = 6 hours and 40 minutes
+4 weeks left, 4 x 2 = 8 hours
+8 + 6 is 14 obvi
+so in terms of extra animation e.g. animating values being "piped" aong the connectinos, maybe not. which is unfortunate. GSAP might save time?
+In terms again of the type of input, it might be difficult to take in a drawn digit as an input. thats a whole new feature
+
+ok im panicking. think about what features youll have.
+i am upset with the fact that ive basically bound myself to using promises because promises are unintuitive, but i really dont want ot spend too long learning something new like GSAP. Then again it could be easy?
+in terms of features. there has to be some kind of user input. and i really have to get feedback from my stakeholders at some point. maybe the simplest user input I could get could be adjusting speed?
+in terms of taking input variables, what could the input be?
+- taking a word, each letter is a node input (26 nodes) where the activation is the number of each letter used. the output is the word's relation to e.g. dog or cat? bad though
+- the input is a like a n x m image (nm nodes) and its basically an MNIST network. may be too many nodes. also may be difficult to implement.
+- something similar to tensorflow's thingy. god knows thats going to be too much to implement
+- approximating a function. how on earth am i going to implement that
+
+ok what do i need? i need
+- something with some kind of user input e.g. adjust speed, give input to input layer
+whats my MVP
+i have no idea
+maybe if i cut this iteration short i can evaluate how its going
+ok. most likely this project will not be completed before christmas. so im going to get something very basic out, maybe there's forward propogation but no backpropogation, maybe theres not even any maths. and because of that, im going to add some user input now (as in in iteration 3) to be able to get user feedback.
+
+key:
+not technically necessary but v. important: (nN-vI)
+not technically neccessary but important: (nN-I)
+not necessary: (nN)
+very important (vI)
+moderately important (mI)
+too big (B)
+im going to list features i am aware i am already missing and would like:
+- animation (vI)
+- fullscreen / dynamically-screened canvas (nN-vI)
+- change the damn chartreuse background (nN-mI)
+- some kind of "explainer" text in the top left (nN-vI)
+- backpropogation (vI) (B)
+- any way of animating node values being "pipelined" down connections (nN-mI)
+- user input (nN-vI) examples include:
+    - a button to start animation
+    - the ability to pause and unpause aniamtion (either via clicking canvas or a button)
+    - a drag input to change speed (nN-I)
+    - any way of inputting a value (B) (mI)
+
+besides the state of the project, im also struggling with user feedback because i dont know how to format a form or how to format the questions i ask. im worried about things like unconscious bias, which is probably me jsut stressing over things that dont matter
+
+i should probably add a video of my spike test working at some point.
+
+ok lemme look back on my notes on warped time and whatnot
+first, before implementing animation, im going to implement warpedTime and speed and paused, so i dont have to worry about those after animating.
+
+upon initialisation:
+state.warpedTime = 0
+state.paused = false
+state.speed = 1
+
+ok now its time ti implement animation
+oh wait i forgot i should also give layers animation lists
+
+should be noted that since all the animation functions affect the animations list of each layer in the network, they cannot be completely pure
+
+damn i never even considered that fact that weights could also be animated
+ok. these new types of animation objects also have a property called updateWeight? one sec ill change everythign real quick
+it also needs to be the case that in a layer, every animation must either be a weight or a node. i think that can therefore be determined in animateLayer?
+oh god. theres a difference between updating and between indexing isnt there
+its fine i think theyll be given thingies idk
+these functions arent modular anyways
+
+oh god wait that changes everything. because the animation list will be different and everything wont it. oh dear god no
+ok. ok. the animation list is a list of undetermined length, i think.
+
+maybe first i will care about nodes and then i will care about weights separately?
+no there has to be a way around this.
+yeah i think that the list of undetermined length works. and then rather than the index of the animation be equal to the index of the node, it could contain the indices required.
+or there could be 2 different lists, to avoid index errors.
+ok lets try that idea of the animations list being of undetermined length first.
+
+currently stuck because unsure of how to re-write the animation function.
+
+16/11/25
+
+neill meeting:
+also talk to teachers
+ask them which features to prioritise e.g. the animation of things being pipelined
+dont take it as gospel but it will be helpful, and in your writeup, acknowledge it
+get feedback as soon as you can
+spend half an hour going through the markscheme
+
+gsap:
+gsap.to()
+easing
+gsap.timeline()
+gsap changes objects, so everything that is drawn woul dhave to be a property of some object.
+if everything has to be something, then you could have a global transparency as part of global state.
+gsap.to returns a thing with data type animation? may be an object idk
+
+review if using a module for animation will limit you in terms of marks
+
+first of all, get gsap working using keypresses
+then build an animation, just something terrible that works
+just do the easy stuff
+at each point, take a step back and think about whats hte easiest thing to do next
+make a list of all of the properties of your nodes that you might want to animate
+
+17/11/25
+going to get the code I have working, or attempt to, before using GSAP
+
+struggling with the indexing differences but weve got this
+something ive noticed: do my animations even need to be promisified at all? at least, each individual animation doesn't really need to be promisified. because each animateLyaer() run shoul djust animate the layer once. lets try it without awaiting animate()
+
+wow so the spike test code works if i made all those changes. i removed animateNodeand unpromisified animate, so that the actual value changes happen in animateLayer. which makes sense, since when the layer is animated, all values will only ever change once.
+
+now i have to re-plan my functions.
+
+this is very confusing because im using a tuple of indices, and some are strings and some are integers because of objects and arrays, and i just kind of hve to hope and pray i use the correct ones?
+
+i feel like rather than each animation have the updateWeight? property, that should be given to the entire animations list. or even the entire layer. because at a time, each layer will either be updating the weights or the nodes.
+
+due to the difference in indexing, it may even be "safer" if animateLayer was split up based on that fact, into animateNodes and animateWeights
+
+ok just for now, make it happen. like this. we can make it better later. just like what pinterest keeps saying
+
+ok first ill make the animation function (as in not update state)
+
+worth mentioning these functions will likely not be very modular so there's that
+
+ok i made the functions. but theyre all very not modular. maybethey should be more modular? at least as much as they can be.
+i feel like warpedTime shouldnt be an argument, and they should be obtained within the function, to get a more accurate time. but i dont remember how i could make functions that were imported but still referred to global state. i think I have to also import global state? hopefully that works.  anyways ive made the functions and theyre currently untested.
+
+18/11/25
+
+going to implement my animation functions without testing them, and hopefully all is well. unlikely to be the case but onwards and upwards yk
+ok its just like missing lets so far
+
+its time. gonna write just one animateLayer function
+ok after fixing all the missing lets nothing happened. nothing happened. no errors, no nothing.
+cannot read properties of 'null' reading indxTuple
+but that error only throws occasinoally? coming from updateState.
+realised i hadnt changed animateAttribute to also return false and such
+attempted to animate weights and once again, i think it was attempting to animate using a null animation object
+OK IT WORKS
+yayy! ok i think this iteration is finished

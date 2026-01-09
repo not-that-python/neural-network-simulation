@@ -1,0 +1,250 @@
+stakeholder feedback:
+hams:
+numbers can be shown above the node
+when weighted sums are calculated, the number that represents the weight is smushed with a copy of the number that represents the node, and then the resulting number slides down the connetion (like the idea you had before with the white circle)
+hazel:
+numbers for the nodes yes
+but also, a key in the top-right corener for example e.g. wite = 1, black = 0
+rather than a white circle going along the line, a small circle with the same colour will go along the line, AND based on the value of the weight, it will get smaller or bigger as it goes across.
+you can't immediately see the numerical value of the weight along the connection, but you will be able to see it if you hover over the line. (I wonder if this is only really possible with HTML DOM elements?)
+queenie:
+something along the lines of using HSL (hue, saturation, lightness) instead of a greyscale. i imagine the hue of each node is different, but the lightness can be changed
+have a colourblind setting
+greyscale is boring and sad
+hobver over the node to see its numerical value
+or could click over them
+could also do arrows
+pr the line could just blip (or pulse?)
+
+22/11/25
+considering the feedback, i might revise the greyscale colour scheme being used for the nodes. i could have them also be blue, like the weights. but then woudl that make sense? im going to take another look at 3b1b and the tensorflow playground.
+I'm definitely going to implement the idea of hovering over a node to show it's value. hovering over the weights might be too finnicky though, and not worth it. maybe for each layer, there can be some something somewherre that you can click to see all the weights of each layer.
+for the thingies going along the lines to represent forward prop, 
+
+in terms of a different colour scheme to the greyscale, I found an image from IBM that looks very cool, where the input layer is turquoise, all hidden layers are blue, and the output layer is purple. i could definitely use this colour scheme or a colour scheme like it instead.
+
+in terms of the visual forward prop, I liked the idea of the circle that changes size, but idk what colour it would be, especially considering negative weights. maybe it would have a similar colour mapping to weights, rather than to nodes.
+i think im not going to have the idea of the changing colour, unfortunately, but if it still gets asked for after implementing, ill definitely reconsider. ill just have a tiny circle that is the same colour as the previous node. (maybe to represent negative changes, now that im using coloured nodes, i could use the direct opposite colour on the colour wheel?)
+I intend for this network to be small enough (i.e. for the layers to have few enough nodes) so that the value of each individual node being calculated can be shown. so wait. wait. does that mean undoing all my work of making each layer light up at the same time was useless. goddamnit. its FINE its fine guys
+
+I took a look on the 3b1b website, and in that demo, there's this flash of yellow line that runs along the connections. strangely, not every line in a layer will flash, only some. I took a closer look at this to think about how i would implement it if i wanted to: maybe the yellow lines are all hidden, but some rectangle moves across, "un-hiding" the yellow lines all along the same vertical line. but no, each line is being revealed at the saem rate. (possibly even different rates, because they reach their nodes at different times, despite all starting at the same time. hell they might not even start at the same time. maybe they jsust start and end when they want to? because of course.) we can see this because halfway through the animation, some lines are ahead of the others. i dont know how i would implement that, and i dont even want to think about it.
+
+i am also not even going to try making any more manual animation. i mgith just use gsap i cant lie.
+
+anyways. before i do the extra animation, maybe ill just get forward propogation working mathematically, so i can spend less time on animation
+
+24/11/25
+added a pause button! got user feedback and it apparently sucks so ill add the play triangle
+
+25/11/25
+ok im going to do the hover thing
+to detect collision between circles, I detect the pythagoras distance between the mouse and the centre fo the circle (which is definitely it's posiiton). it must be less than or equal to the radius
+
+am stuck because i realise i want a draw state function and dont have a draw state function
+
+need a function that logs the value of a given node if the node is collided with. otherwise nothing happens
+because the function requires position, the checkign for hovers nust happen after drawState
+
+i want something to iterate through all nodes and log it's value if its collided with.
+maybe a separate function called hoverValues that checks for all hovering. its called hoverValues because it woudl also check for weights when and if that happens. so hoverValue would run in drawLoop
+mouse moving: https://developer.mozilla.org/en-US/docs/Games/Tutorials/2D_Breakout_game_pure_JavaScript/Mouse_controls
+
+offsetX and offsetY: https://www.w3schools.com/jsref/event_offsetx.asp
+
+ok great now I need a html element.
+I think that hoverValues would take this html element as an input, and then hoverNode would return either the node value as a string, or false.
+but then there's no point in returning the indices as outputs
+
+toFixed(): https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toFixed
+
+ok so its kind of working. i cant clear the html element after collision has stopped though, because for some reason, the output of hoverNode will be false right after being the value we need
+
+ok i tried using a while loop instead of an if statement and that blew up the website idk what else i expected.
+i logged the mouse position and it doesnt change so idk why hovernode will return false
+
+ok so i tried it out, butits difficult because of the fact i cant use the whole false thing. theres also no if statement anywhere to make an else of, so i currently have no working way of letting nodes take precedence over weights.
+
+i realised the problem. it was iteration
+
+26/11/25
+im back and the hsl colours are qeird but i have decided i would prefer to use hsl than rgb. i found out about another thing called hsv / hsb which i would prefer to hsl, because the brightest value would just be a bright version of the colour instead of white, which is exactly what I want. unfortunately js doesnt take hsv so i did some searchign up and found a hsv to rgb function on stack overflow, which i decided to use. the brightness worked. the colours fucking changed. theyre now completely different colours. even after i changed the percentages to decimals and the degrees to radians. it still all went crazy and i have no idea why.
+
+i found out the problem. all values must be between 0 and 1.
+
+ok i want to try and calculate the activations layer of one layer
+credit for sigmoid function idk propably geeksforgeeks
+making a small spike test file to be able to calculate the acivations for something once. also see if i can import tensorflow without setting off a nuke
+installed it, lets see what happens
+ok i console.logged tf and everything is working so far. thats a good sign
+learning everything from here: https://www.tensorflow.org/js/guide/tensors_operations
+dot product: https://www.geeksforgeeks.org/javascript/tensorflow-js-tf-matmul-function/
+definition of dot product: https://www.khanacademy.org/math/multivariable-calculus/thinking-about-multivariable-function/x786f2022:vectors-and-matrices/a/dot-products-mvc
+
+ok so from what ive seen, it works for two matrices of the exact same shape. doesnt work if mat1 is 2x2 and mat2 is 1x2 (going in format xxy btw). and it works when mat1 is 2x2 and mat2 is 3x2. strange
+
+found tf.linalg.matvec (https://www.tensorflow.org/api_docs/python/tf/linalg/matvec) which should allow the ability to multiply matrix and vector. going to give it a try
+ok its not a function so
+so i checked the version of tf that i installed, and i installed 1.2.3, and the matvec function is version 2.16.1 so um
+i tried to install v2.16.1 but apparently the latest version is 1.2.3
+ooohhh matvec is a python function goddamnit
+it turns out my vector was an array and ot a vector which explains it. it had shape (in format xxy) 2x1 and needed shape 1x2 (which makes sense since ive been writing shapes the wrong way around. this isnt an error worth mentioning really this was just me being stupid)
+
+moral of the story: make surte your vector is *tall*, not *long*.
+
+i dont know where i found out about reshape.
+map_fn: https://www.educative.io/answers/how-to-apply-a-function-similar-to-map-on-a-tensor
+map: https://www.w3schools.com/jsref/jsref_map.asp
+using dataSync: https://stackoverflow.com/questions/50267902/how-do-i-apply-a-map-function-to-a-tensor-tensorflow-js
+
+28/11/25
+LOCK IN
+
+ok what functions do i need?
+i need a function that can calculate the activations of a layer.
+given what?
+that layer's weights and the previous layer's activations.
+there are two kinds im thinking of.
+a function that given the network and the index of the relevant layer, calculates the activations of that layer, specifically.
+a function that, given a previous layer's activations and the current layer's weights, can return the activations of that layer.
+i think the latter would be better as a function, as its more modular and reduces issues regarding iteration and assignment.
+i dont think that one should even exist.
+
+I perhaps need a function that can directly obtain the activations from a layer, given the layer.
+
+I need a function that can iterate through the network and calculate all the new activations. what would it return? an array of activations. and the indices aren't needed, as these can be assigned based on their order in that array.
+
+And then when the animation happens, you do the that and iterate through fPropResults
+
+to save iterations, should the animation happen as you calculate the fprop? ill try that.
+ok nice.
+
+I am going to make state imported so that I can make non-modular functions. however i feel like there's no point? no actually i wont, because I want to make forward prop in a separate file anyways
+
+ok what are my steps
+
+credit for sigmoid function: https://www.geeksforgeeks.org/machine-learning/derivative-of-the-sigmoid-function/
+
+yk what i can do the writeup later. i haev to pump this out now
+
+oh dear. that mapping method flattens the matrix.
+
+convert tensor into array: https://www.tensorflow.org/js/guide/tensors_operations
+
+I now need a function for mapping a function to a tensor. this function has input validation for making sure the tensor is exactly 2D
+
+attempted to test the mapTo2D function, but there was an issue with ids? its probably because tf uses ids to differentiate identical tensors
+i could possibly use dispose after it runs
+nope nvm have no idea how to do that. im just going to hope it works or print the result out instead
+
+I attempted to implement the tidy function, but i ended up not doing that, because it says "cannot return Promise from tidy". lets just hope it all goes well without tidy?
+
+29/11/25
+
+i should probably source my knowledge fo how to calculate the activation of a layer
+i used this website: https://medium.com/@melodious/understanding-deep-neural-networks-from-first-principles-logistic-regression-bd2f01c9e263
+
+going to create all my functions
+so i have to await everything now because i have to await .array() in mapTo2DTensor. hopefully thats not an issue?
+
+testing calculateActivations and im getting a matrix back of loads of NaNs. its the right length though? could be matMul()?
+
+ok i printed Z.print() and that did return zeroes, so its an issue with eithe r sigmoid or mapTo2DTensor
+
+issue is with the sigmoid function which i jsut tested. i also discovered via synteax that tf has a sigmoid function too? which i might try? nvm that didnt wotrk.
+ok i fixed it, it turns out the function just wasnt returning anything so problem solved now! yayyy
+
+I havent done any input validation for calculateActivations e.g. the sizes of the vector and matrix, but maybe thats ok? because matMul already has that input validation and will already throw the relevant error so its probably ok
+
+js equivalent for list comprehension: https://www.geeksforgeeks.org/python/js-equivalent-to-python-list-comprehension/
+currently, getActivationVector is returning an empty tensor. because i was using filter and not map
+ok now its working ok alright cool cool cool
+
+ok next function to make is the forwardPropogation function. This requires animation and state.warpedTime. it would make sense if the forward propogation itself took warpedTime as an input, since it will involve animation. the issue is i dont know how pure this function will be
+
+ok its not pure because it modifies network rather than returning a new network. but it only requires state for warpedTime (based on animateAll which only requires state for state.warpedTime)
+so this means i can in fact make the forwardPropogation function in the funcs.js file. i could even make it pure by returning the new network? although that might be weird to do especially with the way animation works. maybe to maintain purity, i could separate them out into 2 functions again. although that would require 2 iterations then. nah well just do it as is.
+
+ok i created giveNetworkInputs as a function. it only has one line, which itself is calling another function, but i do think its necessary to know what that line does, and due to the fewer arguments needed, i think its better than a comment
+
+ok i created the forwardPropogation function but have not tested it. due to using animation, it will have to literally just be run i.e. tested maually
+
+im going to test forwardPropogation using the animateALl function, see what happens.
+
+decided to up the duration of feeding the network inputs to 2000 ms, to illustrate the fact tht giving inputs is a separate thing to forward propogation. i could even add a pause afterwards, idk
+
+ok ok we got a tensorflow error up in here so thats really great. um
+the issue is with matMul(). maybe i could change it to explicitly use tensorflow? (i.e. instead of a.matMul(b) doing tf.matMul(a, b))
+ok so doing that solved that issue. but now theres an issue where specifcially on the second layer, the vector will suddenly be the wrong size?
+the sizes are 4,4 (presumably the weight matrix) and 4,1,1 (presumably the prevActivations vector?)
+
+i discovered the issue was because when converting newActivations back into an array, the array would not be flattened. i dont know how that even held up since before matMul? eh whatever lets just try to fix this.
+
+flatten array: https://www.w3schools.com/jsref/jsref_array_flat.asp
+ok yay! the flattening worked.
+
+however we have a new issue with the other two layers not being animated
+
+its like the second layer is awaited but the next 2 arent? oh btw i changed the dimensions of the network to better illustrate the colour changes I made
+no difference seems to be made whether or not you're awaiting forwardPropogation.
+
+i tried puting a second animateLayer function call which should keep everything still for 1000 ms, but this also got awaited. maybe this is some kind of indexing error occuring within animateLayer?
+
+ok the length of both are the same so it's not an error of the length of the new values.
+
+maybe, because the animations still happen one after another, it happens at ultra fast speeds?
+
+maybe its issue with warped time
+yes it is because when you iterate then warpedtime will be different and each animatoin needsa different warped time but these ones all get the same warped time!
+lets first try making this function public whatever idk (im putting the function in script, basically)
+
+ok that did work! yayyyy go me
+all praise the rubber duck method
+
+ok now the issue is with importing state. i would like to see if thats possible. if its not for whatever reason, then i will have to split this up into 2 separate functions.
+
+i have to be careful here, if i define state in the file, i cant define canvas.width and canvas.height. for now i will replace them with actual canvas.width and canvas.height, but maybe I should assign them at the start of the script and also within the gameloop
+
+now then, i think that almost every single function that takes warpedTime as an input should no longer take it as input, and should instead take it straight from state, to get it as recent as possible
+
+ok i did it for forwardPropogation, now I have to be very careful and do the same thing for as many other functions as i can. just to be safe im going to commit now
+
+if i can remove th eneed for warpedTime from animate()? id remove the need for it from so many other functions, potentially
+ok thats really good its worked, now to make sure it will work everywhere else
+ok animateAttribute also no longer needs warpedTime as an input so this is going well
+ok i think i successfully removed warpedTime as an argument from literally every function that used to use it which is really good.
+
+why did i do this? to make sure all the animation functions would be as up-to-date as possible with the current datetime
+
+YAY forwardPropogation finished! yes!
+
+ok backpropogation
+how do I do the stochastic gradient descent?
+maybe maaaybe the user can choose batch size? no nvm
+ok lemme give the layers biases
+
+I think the only layer with no bias would be the output layer. but maybe in that case its ok as the bias can be null?
+the bias should be a number. after multiplying by the matrix, that resulting vector should have added to it a vector just of the bias.
+
+I think that initially, thebias will just be some random number from 0 to 1. it can obviously be adjusted beyond this, but idk whatever.
+
+i might look later into methods of initialising weights and biases
+
+maybe to begin with, the values of my neural network are trying to approximate some 3D function? but then what would it take
+maybe the input is one node and the output is the output of a function. yeah maybe its trying to approximate the output for the sine function? but then how would it take an input?
+
+i need a function createBiasVector
+for the bias, ill just use math,random for each one and hope it goes well
+
+ok i implemented biases. idk how to implement them visually but maybe i wont? no i definitely wont. ok anyways
+
+i am painfully aware of the inefficiency of my code. anyways
+
+ok now im going to implement biases into the forward propogation
+changes to make:
+calculateActivations will take the biasVector as input
+the biasVector will be created in forwardPropogation
+its calculated specifically using the bias of the previous layer i think
+
+ok I implemented biases. idk how to prove that i did so I'm going to make it up
+
+ok i updated the calculateActivations function test and it includes biases and it works! yayyy
