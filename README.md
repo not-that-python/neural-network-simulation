@@ -1,4 +1,4 @@
-# neural-network-simulation
+# Neural Network Simulation
 Online visualisation of a neural network, designed for classroom teaching.
 This was my NEA for my A levels.
 
